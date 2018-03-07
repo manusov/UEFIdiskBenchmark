@@ -1,0 +1,8 @@
+1) MBPS calculation, F ( CAP units, delta-CAP, data size ).        = OK, VERIFY REQUIRED.
+2) Errors handling, use module and data from UEFImark EBC edition. = OK, VERIFY REQUIRED.
+3) Drive selection, 3-digits input.                                = OK, VERIFY REQUIRED.
+4) Tails, reassign buffer size.                                    = OK, VERIFY REQUIRED.
+
+5) Bug with >10 drives.
+6) Bug with number of blocks = 1 when size = 0.
+
