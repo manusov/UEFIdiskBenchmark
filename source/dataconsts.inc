@@ -1,7 +1,7 @@
 ;===========================================================================;
 ;=        UEFI Disk Benchmark. Use reads by EFI_BLOCK_IO_PROTOCOL.         =;
 ;=                 Pre-initialized constants, module 4 of 5.               =;
-;=                        (C) IC Book Labs, 2016                           =;
+;=                        (C) IC Book Labs, 2018                           =;
 ;=                                                                         =;
 ;= Code compatible and can be integrated into UEFImark EBC Edition project =;
 ;=      See UEFImark EBC Edition project sources for detail comments       =;
@@ -63,14 +63,14 @@ _EFI_Warnings_Names	= EFI_Warnings_Names - Global_Data_Pool
 ;---------- Data -----------------------------------------------------------;
 
 ; This 2 strings must be sequental, without separation by 0.
-String_Version		DB  'Block IO protocol benchmark v0.10. '  ; DEBUG FOR CAP=2.4 GHZ FIXED.
+String_Version		DB  'Block IO protocol benchmark v0.11. '  ; DEBUG FOR CAP=2.4 GHZ FIXED.
 String_Copyright	DB  '(C) IC Book Labs.',0
 
 ; This string X position must be conform with previous string length.
-Program_Vendor_Data_1	DB  '  '
-Program_Vendor_Data	DB  'http://jelezo.com.ua/' , 0
+Program_Vendor_Data_1	DB  0Dh,0Ah                                    ; '  '
+Program_Vendor_Data	DB  'http://uefi.composter.com.ua/' , 0
 
-Msg_Starting	DB  0Dh,0Ah,'Starting...',0Dh,0Ah,0
+Msg_Starting	        DB  0Dh,0Ah,'Starting...',0Dh,0Ah,0
 
 ;--- Messages strings ---
 
@@ -120,7 +120,7 @@ Result_Table	DB  0Dh,0Ah
 Select_Drive	DB  0Ah
 Show_Drive      DB  0Dh,'Select item 0...'
 Last_Drive	DB  '0 : '
-New_Drive       DB  '  ',0
+New_Drive       DB  9 DUP (0)   ; DB  '  ',0
 
 ;--- GUID macro ---
 

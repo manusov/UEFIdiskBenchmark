@@ -1,7 +1,7 @@
 ;===========================================================================;
 ;=        UEFI Disk Benchmark. Use reads by EFI_BLOCK_IO_PROTOCOL.         =;
 ;=              Library of helpers subroutines, module 3 of 5.             =;
-;=                        (C) IC Book Labs, 2016                           =;
+;=                        (C) IC Book Labs, 2018                           =;
 ;=                                                                         =;
 ;= Code compatible and can be integrated into UEFImark EBC Edition project =;
 ;=      See UEFImark EBC Edition project sources for detail comments       =;

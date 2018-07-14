@@ -1,7 +1,7 @@
 ;===========================================================================;
 ;=        UEFI Disk Benchmark. Use reads by EFI_BLOCK_IO_PROTOCOL.         =;
 ;=               Non pre-initialized variables, module 5 of 5.             =;
-;=                        (C) IC Book Labs, 2016                           =;
+;=                        (C) IC Book Labs, 2018                           =;
 ;=                                                                         =;
 ;= Code compatible and can be integrated into UEFImark EBC Edition project =;
 ;=      See UEFImark EBC Edition project sources for detail comments       =;

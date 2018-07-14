@@ -1,7 +1,7 @@
 ;===========================================================================;
 ;=         UEFI Disk Benchmark. Use reads by EFI_BLOCK_IO_PROTOCOL.        =;
 ;=                       Main module, module 1 of 5.                       =;
-;=                         (C) IC Book Labs, 2016                          =;
+;=                         (C) IC Book Labs, 2018                          =;
 ;=                                                                         =;
 ;= Code compatible and can be integrated into UEFImark EBC Edition project =;
 ;=      See UEFImark EBC Edition project sources for detail comments       =;
@@ -233,7 +233,7 @@ Fill_String:	MOVIBW		@R4,' '
 		CMP64UGTE	R4,R5			; R4 = Local pointer limit compare
 		JMP8CC		Fill_String		; Cycle for pre-blank string
 		MOVIQW		@R4,0
-;--- Numeration, # ---		
+;--- Numeration, # ---                                  ; R3 = Items counter
 		MOVQ		R5,R2			; Store base, outputs can be variable size
 		MOVSNW		R2,R2,1			; R2 = Pointer + 1 , left space before drive ID
 		XOR64		R4,R4			; R4 = Template size, 0 means no template
@@ -262,7 +262,7 @@ Skip_4:
 		MOVSNW		R2,R5,16		; R2 = Position independent from previous outputs
 		MOVD		R3,@R6			; R3 = Read MediaID from EFI_BLOCK_IO_MEDIA structure
 		CALL32		String_Decimal32	; Print Media ID
-;--- Boolean attribute RM ---
+;--- Boolean attribute, starts from RM ---
 		MOVSNW		R2,R5,26		; R2 = Position independent from previous outputs
 		MOVQW		R3,@R6,0,4		; R3 = Boolean flags, valid low 5 bytes at QWORD
 		XOR64		R7,R7			; R7 = Flags counter
@@ -300,7 +300,14 @@ Skip_21:
 		SHR64		R3,R4,20		; R3 = Convert Bytes to MB, because R4=0, this shift is SHR 20
 		CALL32		String_Decimal32	; Print Drive size, units = megabytes
 		MOVIDD		@R2,' MB '		; Print space and units 'MB'
-;--- Drive string done ---
+;--- Drive string done, coloring it, normal or bold white, f(logical or physical) ---
+		MOVIQW		R2,0Fh			; R2 = Prepare Color = Bold White
+		MOVBW		R3,@R6,0,6		; R3 = Logical partition (LP) flag, zero-extended
+		CMPI64WEQ	R3,0
+		JMP8CS		Skip_30			; Go with Color = Bold White if not a logical partition
+		MOVIQW		R2,07h			; Color = Normal White
+Skip_30:	CALL32		Output_Attribute	; Set color
+;--- Drive string done, write it ---
 		MOVIQW		R2,200			; R2 = 200 , use input as R1-relative offset
 		CALL32		String_Write		; Visual this prepared string
 ;--- Cycle ---		
@@ -314,8 +321,12 @@ Skip_21:
 		ADD64		R6,R7		; Source address + Natural width
 		CMP64UGTE	R5,R4		; Compare with R4 = Limit
 		POP64		R7
-		MOVSNW		R3,R3,1		; R3+1
+		MOVSNW		R3,R3,1		; R3+1 , R3 = Items counter
 		JMP32CC		List_Drives	; Cycle for all detected drives
+
+;--- Restore color, normal white ---
+		MOVIQW		R2,07h			; Color = Normal White
+		CALL32		Output_Attribute	; Set color
 ;--- Separate line ---
 		MOVIQW		R2,_Msg_CRLF
 		CALL32		String_Write		; Skip 1 string
@@ -331,45 +342,134 @@ Skip_21:
 		XOR64		R4,R4			; R4 = Template
 		CALL32		String_Decimal32
 
+
+;---------- v011 fix bug with maximum 10 drives ----------
+;
+;		MOVIQW		R2,0Eh			; Color = Bold Yellow
+;		CALL32		Output_Attribute	; Set color
+;		MOVIQW		R2,_Select_Drive
+;		CALL32		String_Write		; Write drive selection string
+;
+;Wait_Right_Key:
+;		CALL32		Input_Wait_Key		; Wait for key, return when press
+;
+;		MOVIQD		R4,0000FFFFh
+;		AND64		R4,R2
+;		CMPI64WEQ	R4,0017h		; ESCAPE = 17h
+;		JMP32CS		Benchmark_Skip_CRLF
+;		CMPI64WEQ	R4,0
+;		JMP8CC		Wait_Right_Key
+;		MOVIQW		R4,16
+;		SHR64		R2,R4
+;		CMPI64WULTE	R2,030h - 1		; "0" = 30h
+;		JMP8CS		Wait_Right_Key
+;		CMPI64WUGTE	R2,039h + 1		; "9" = 39h
+;		JMP8CS		Wait_Right_Key
+;
+;	;--- ENCODING BUG ---
+;	; *	MOVBW		@R1,0,_New_Drive,R2
+;		MOVSNW		R4,R1,_New_Drive
+;		MOVBW		@R4,0,0,R2
+;	;---
+;
+;		MOVIQW		R4,0Fh
+;		AND64		R2,R4
+;		CMP64ULTE	R2,R3
+;		JMP8CC		Wait_Right_Key
+;
+;		MOVINW		R4,1,0				; R4 = Natural width
+;		MULU64		R2,R4				; R2 = Scaled index by natural width
+;		MOVQW		@R1,0,_Selected_Drive,R2	; Store scaled index
+;		
+;		MOVIQW		R2,_Show_Drive
+;		CALL32		String_Write		; Write drive selection string
+;		MOVIQW		R2,_Msg_CRLF_2
+;		CALL32		String_Write		; Skip 2 strings
+;
+;---------- v011 fix bug with maximum 10 drives ----------
+
+
+Key_BackSpace:
+		MOVSNW		R4,R1,_New_Drive	; R4 = Address of ASCII buffer for input digits
+		MOVIBW		@R4,0			; Write terminator byte 00h to buffer
+		XOR64		R5,R5			; R5 = Cursor for buffer
+
 		MOVIQW		R2,0Eh			; Color = Bold Yellow
 		CALL32		Output_Attribute	; Set color
 		MOVIQW		R2,_Select_Drive
 		CALL32		String_Write		; Write drive selection string
+
 Wait_Right_Key:
 		CALL32		Input_Wait_Key		; Wait for key, return when press
 
-		MOVIQD		R4,0000FFFFh
-		AND64		R4,R2
-		CMPI64WEQ	R4,0017h		; ESCAPE = 17h
-		JMP32CS		Benchmark_Skip
-		CMPI64WEQ	R4,0
-		JMP8CC		Wait_Right_Key
-		MOVIQW		R4,16
-		SHR64		R2,R4
-		CMPI64WULTE	R2,030h - 1		; "0" = 30h
-		JMP8CS		Wait_Right_Key
-		CMPI64WUGTE	R2,039h + 1		; "9" = 39h
-		JMP8CS		Wait_Right_Key
+		MOVIQD		R7,0000FFFFh
+		AND64		R7,R2
+		CMPI64WEQ	R7,0017h		; ESCAPE = 0017h
+		JMP32CS		Benchmark_Skip_CRLF	; Go exit test if ESCAPE
 
-	;--- ENCODING BUG ---
-	; *	MOVBW		@R1,0,_New_Drive,R2
-		MOVSNW		R4,R1,_New_Drive
-		MOVBW		@R4,0,0,R2
-	;---
+		CMPI64WEQ	R7,0
+		JMP8CC		Wait_Right_Key		; Go wait key if non ESCAPE but scan code non zero
 
-		MOVIQW		R4,0Fh
-		AND64		R2,R4
-		CMP64ULTE	R2,R3
-		JMP8CC		Wait_Right_Key
+		MOVIQW		R7,16
+		SHR64		R2,R7
 
-		MOVINW		R4,1,0				; R4 = Natural width
-		MULU64		R2,R4				; R2 = Scaled index by natural width
-		MOVQW		@R1,0,_Selected_Drive,R2	; Store scaled index
+		CMPI64WEQ	R2,000Dh		; ENTER = 000Dh
+		JMP8CS		Key_Enter		; Go handling ENTER if comparision match
+
+		CMPI64WEQ	R2,0008h		; BACKSPACE = 0008h
+		JMP8CS		Key_BackSpace		; Go handling BACKSPACE if comparision match
+
+		CMPI64WULTE	R2,030h - 1		; DIGIT KEY "0" = 30h
+		JMP8CS		Wait_Right_Key		; Go wait key if digit below "0"
+		CMPI64WUGTE	R2,039h + 1		; DIGIT KEY "9" = 39h
+		JMP8CS		Wait_Right_Key		; Go wait key if digit above "9"
 		
-		MOVIQW		R2,_Show_Drive
+		CMPI64WUGTE	R5,8
+		JMP8CS		Wait_Right_Key		; Go wait key if buffer overflow
+		
+		MOVBW		@R4,0,0,R2		; Write char = input digit
+		MOVSNW		R4,R4,1
+		MOVIBW		@R4,0
+
+		MOVIQW		R2,_New_Drive
+		ADD64		R2,R5
 		CALL32		String_Write		; Write drive selection string
+
+		MOVSNW		R5,R5,1			; R5 = Cursor + 1
+		JMP8		Wait_Right_Key		; Repeat wait key
+
+Key_Enter:
+		MOVSNW		R4,R1,_New_Drive	; R4 = Address of ASCII buffer for input digits		
+		MOVBW		R6,@R4,0,0
+		CMPI64WEQ	R6,0
+		JMP8CS		Key_BackSpace		; Go backspace if empty input
+		
+		XOR64		R7,R7			; R7 = Accumulator for extracted number
+Parse_Buffer:
+		MOVBW		R6,@R4,0,0
+		CMPI64WEQ	R6,0
+		JMP8CS		Parse_Stop		; Exit parse cycle if terminator byte
+		MOVIQW		R5,0Fh
+		AND64		R6,R5
+		MOVIQW		R5,10
+		MUL64		R7,R5
+		ADD64		R7,R6			; R7 = Accumulate extracted number
+		MOVSNW		R4,R4,1			; R4 = Buffer pointer, +1
+		JMP8		Parse_Buffer		; Cycle for parse buffer and extract number
+Parse_Stop:
+		MOVDW		R3,@R1,0,_Number_of_Drives
+		CMP64UGTE	R7,R3
+		JMP8CS		Key_BackSpace			; Go backspace if number too large
+
+		MOVINW		R5,1,0				; R5 = Natural width
+		MULU64		R7,R5				; R7 = Scaled index by natural width
+		MOVQW		@R1,0,_Selected_Drive,R7	; Store scaled index
+
 		MOVIQW		R2,_Msg_CRLF_2
 		CALL32		String_Write		; Skip 2 strings
+
+;----------
+
 
 ;---(12)--- Interpreting drive selection -----------------------------------;
 
@@ -671,9 +771,9 @@ Benchmark_Done:
 
 
 ;********** DEBUG, FIX ORACLE VIRTUAL BOX CAP TIMER BUG **********
-
+;
 ; MOVIQD @R1,0,_CAP_Period,417000  ; 417 PS MEANS APPROX. 2.4 GHZ
-
+;
 ;*****************************************************************
 
 
@@ -706,8 +806,8 @@ Benchmark_Done:
 		MOVIQW		R2,_Msg_Press
 		CALL32		String_Write		; Write parameters at table up
 		CALL32		Input_Wait_Key		; Wait for key, return when press
-		MOVIQW		R2,_Msg_CRLF
-		CALL32		String_Write		; Skip 1 string
+		MOVIQW		R2,_Msg_CRLF_2
+		CALL32		String_Write		; Skip 2 strings
 
 ;---(21)--- Release firmware memory ----------------------------------------;
 
@@ -736,11 +836,22 @@ Close_Drives:
 		
 ;---(23)--- Exit -----------------------------------------------------------;
 
-Exit_Point:	POP64		R3
+Exit_Point:	
+		MOVIQW		R2,07h			; Color = Normal white
+		CALL32		Output_Attribute	; Set color
+
+		POP64		R3
 		POP64		R2
 		POP64		R1
 		XOR64		R7,R7
 		RET
+
+Benchmark_Skip_CRLF:
+
+		MOVIQW		R2,_Msg_CRLF_2
+		CALL32		String_Write		; Skip 2 strings
+		JMP8		Benchmark_Skip
+
 
 ;---(24)--- Errors handling, output messages -------------------------------;
 
@@ -764,7 +875,7 @@ Error_Point:
 		MOVIQW		R2,_Msg_Press
 		CALL32		String_Write		; Write parameters at table up
 		CALL32		Input_Wait_Key		; Wait for key, return when press
-		MOVIQW		R2,_Msg_CRLF
+		MOVIQW		R2,_Msg_CRLF_2
 		CALL32		String_Write		; Skip 2 strings
 
 		JMP8		Exit_Point

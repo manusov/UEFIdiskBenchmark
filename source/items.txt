@@ -3,6 +3,6 @@
 3) Drive selection, 3-digits input.                                = OK, VERIFY REQUIRED.
 4) Tails, reassign buffer size.                                    = OK, VERIFY REQUIRED.
 
-5) Bug with >10 drives.
+5) Bug with >10 drives.                                            = OK, VERIFY REQUIRED.
 6) Bug with number of blocks = 1 when size = 0.
 

@@ -30,8 +30,8 @@ Output parameters and flags:
 
 "Size" Available size of mass storage device
 
-Known bug:
-maximum 10 devices supported, include aliases.
+
+
 
 
 

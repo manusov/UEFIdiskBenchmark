@@ -3,7 +3,7 @@
 ;=                                                                         =;
 ;=     MACRO FOR EFI BYTE CODE INSTRUCTIONS ASSEMBLING, module 2 of 5      =;
 ;=                      (in alphabetical order)                            =;
-;=                       (C)2016 IC Book Labs.                             =;
+;=                       (C)2018 IC Book Labs.                             =;
 ;=                                                                         =;
 ;= Code compatible and can be integrated into UEFImark EBC Edition project =;
 ;=      See UEFImark EBC Edition project sources for detail comments       =;
